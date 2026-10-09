@@ -96,6 +96,8 @@
   #letter ul{list-style:none;padding:0;margin:0}
   #letter li::before{content:"💗 "}
   .link{background:none;border:none;color:var(--deep);text-decoration:underline;cursor:pointer;font:inherit;margin:0 .6rem}
+  #continueLetter{display:none;margin-top:.25rem}
+  #continueLetter.show{display:inline-flex}
   .bubble{object-fit:cover;box-shadow:0 8px 20px rgba(0,0,0,.25);border:4px solid #fff}
   #typed{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-family:'Josefin Sans',sans-serif;font-weight:400;
     color:#e8101a;font-size:clamp(1.2rem,4vw,1.8rem);letter-spacing:.25em;transition:opacity .6s;white-space:nowrap}
@@ -219,6 +221,16 @@
   .screen h2{font-size:clamp(2.9rem,10.5vw,5.6rem);line-height:1.05;max-width:92vw}
   .screen h1.script{font-size:clamp(3rem,11vw,5.6rem)}
   #s8 h2.bday{font-size:clamp(1.1rem,4.2vw,1.9rem)!important}
+  /* DEV: QUESTION SCREENS (s4, s5, s6b) - smaller heading, subtitle, stacked answer buttons, text box */
+  .screen h2.q{font-size:clamp(1.9rem,6.5vw,3.4rem)}
+  .qsub{margin:0;font-family:'Caveat',cursive;font-weight:700;font-size:clamp(1.4rem,4.5vw,2rem);color:#7a2a40;max-width:34rem}
+  .row.col{flex-direction:column;gap:.9rem;max-width:92vw}
+  .eyebrow{font-size:.8rem;letter-spacing:.3em;text-transform:uppercase;color:#a0344f}
+  .ownans{display:flex;gap:.6rem;align-items:center;justify-content:center;flex-wrap:wrap;max-width:92vw}
+  .ownans input{font-family:'Caveat',cursive;font-size:1.4rem;padding:.4rem 1rem;border-radius:999px;border:2px dashed #ec1d48;
+    background:rgba(255,255,255,.8);color:#4a1028;outline:none;width:min(80vw,20rem)}
+  .ownans input:focus{box-shadow:0 0 0 3px rgba(236,29,72,.25)}
+  @media (max-height:700px){.screen{gap:.8rem}.screen h2.q{font-size:clamp(1.5rem,5vw,2.4rem)}.btn{font-size:1.15rem}}
   /* DEV: floating music on/off button */
   #musicBtn{position:fixed;top:20px;right:14px;z-index:80;width:2.4rem;height:2.4rem;border-radius:50%;border:1.5px solid rgba(255,255,255,.85);
     background:rgba(232,18,60,.8);color:#fff;font-size:1.05rem;cursor:pointer;box-shadow:0 4px 12px rgba(0,0,0,.3);transition:transform .2s}
@@ -270,24 +282,37 @@
 
   <!-- DEV: SCREEN 4 - "How much do I love you?". "A little" goes to the sad screen s5, the other two go to s6. -->
   <section class="screen" id="s4">
-    <h2>Do you know how much I love you?</h2>
-    <div class="row">
-      <button class="btn" data-go="s6">A lot 😁</button>
-      <button class="btn" data-go="s5">A little 😞</button>
-      <button class="btn" data-go="s6">More than anyone 💗</button>
+    <div class="eyebrow">💗 Question 1 — A little memory</div>
+    <h2 class="q">Let's start with something easy… 🫶🏻</h2>
+    <p class="qsub">If you could relive one moment with me, which one would you choose?</p>
+    <div class="row col">
+      <button class="btn" data-go="s6">🌷 Our first memorable moment</button>
+      <button class="btn" data-go="s6">😂 One of our silly moments</button>
+      <button class="btn" data-go="s6">🥹 A moment when you felt truly loved</button>
+      <button class="btn" data-go="s6">💌 A moment I'll never forget</button>
     </div>
   </section>
 
   <!-- DEV: SCREEN 5 - Second wrong-answer screen. "Try again" returns to s4. -->
   <section class="screen" id="s5">
-    <h2>Not little appaaa 😭😭</h2>
-    <div class="ghost"></div>
-    <button class="btn" data-go="s4">Try again 🥲</button>
+    <div class="eyebrow">💗 Question 2 — Tell me the truth</div>
+    <h2 class="q">Okay, now tell me the truth… 👀</h2>
+    <p class="qsub">What's one little thing I do that always makes you smile?</p>
+    <div class="row col">
+      <button class="btn" data-go="s5b">🤭 The way I tease you</button>
+      <button class="btn" data-go="s5b">🫶🏻 The way I care about you</button>
+      <button class="btn" data-go="s5b">😂 My weirdness</button>
+      <button class="btn" data-go="s5b">💗 Honestly, just being me</button>
+    </div>
+    <div class="ownans">
+      <input id="ownAnswer" type="text" maxlength="200" placeholder="…or write your own answer 💌" autocomplete="off">
+      <button class="btn sm" id="ownSend">Send</button>
+    </div>
   </section>
 
   <!-- DEV: SCREEN 6 - Happy acknowledgement with an animated blowing-kiss heart (inline SVG). -->
   <section class="screen" id="s6">
-    <h2>Awwwwwww<br>I know you love me too 💗</h2>
+    <h2>Aaaaw its soo cute 🥹💗</h2>
     <svg class="kiss" width="150" height="140" viewBox="0 0 150 140">
       <path d="M75 128C10 85 4 40 36 22c18-9 34 0 39 14 5-14 21-23 39-14 32 18 26 63-39 106z" fill="#fb0a4d" stroke="#6b0a22" stroke-width="4"/>
       <ellipse cx="42" cy="72" rx="11" ry="9" fill="#c40a45"/><ellipse cx="108" cy="72" rx="11" ry="9" fill="#c40a45"/>
@@ -295,7 +320,29 @@
       <path d="M70 78q5 5 10 0" stroke="#6b0a22" stroke-width="3" fill="none" stroke-linecap="round"/>
       <rect x="82" y="84" width="34" height="18" rx="9" fill="#fff" stroke="#6b0a22" stroke-width="3" transform="rotate(-25 99 93)"/>
     </svg>
-    <button class="btn" data-go="s7">What abt next? 🤭</button>
+    <button class="btn" data-go="s5">Next one 🤭</button>
+  </section>
+
+  <!-- DEV: SCREEN 5b - reply after Question 2 (also shown after she sends her own typed answer). -->
+  <section class="screen" id="s5b">
+    <h2>Hehe… I'll remember that 🥰</h2>
+    <svg class="kiss" width="130" height="120" viewBox="0 0 150 140">
+      <path d="M75 128C10 85 4 40 36 22c18-9 34 0 39 14 5-14 21-23 39-14 32 18 26 63-39 106z" fill="#fb0a4d" stroke="#6b0a22" stroke-width="4"/>
+    </svg>
+    <button class="btn" data-go="s6b">One last thing 🥹</button>
+  </section>
+
+  <!-- DEV: SCREEN 6b - Question 3. Every option leads to the teaser (s7) -> birthday reveal. -->
+  <section class="screen" id="s6b">
+    <div class="eyebrow">💗 Question 3 — Before we continue</div>
+    <h2 class="q">Before we continue, I need to know something… 🥹</h2>
+    <p class="qsub">Do you know how special you are to me?</p>
+    <div class="row col">
+      <button class="btn" data-go="s7">🤍 Maybe a little?</button>
+      <button class="btn" data-go="s7">🥹 I think I do…</button>
+      <button class="btn" data-go="s7">💗 Yes, but tell me again!</button>
+      <button class="btn" data-go="s7">👀 I guess I'll find out on the next page…</button>
+    </div>
   </section>
 
   <!-- DEV: SCREEN 7 - Teaser. Tapping "Wanna know?" opens s8 AND triggers the 5-second teaser music (see SCREEN_CUES.s8). -->
@@ -346,6 +393,7 @@
       <div class="seal">❀</div>
     </div>
     <p style="margin:0;font-size:1.4rem;font-family:'Caveat',cursive;color:#7a2a40">(tap on the envelope to open the letter)</p>
+    <button class="btn" id="continueLetter" data-go="s11">Continue to our memories 💗</button>
   </section>
 
   <!-- DEV: SCREEN 11 - Memory Theatre. The 100 photo tiles are generated by initTheatre() from the sayuu100 folder; this markup is only the curtains, title, buttons and lightbox. -->
@@ -421,6 +469,7 @@
     document.getElementById(current).classList.remove('active');
     setTimeout(()=>document.getElementById(id).classList.add('active'),250);
     current=id;
+    if(id==='s7') sendAnswers();   // DEV: all questions done -> send her answers to you
     if(id==='s1b') setTimeout(runLove,300);
     if(id==='s8') setTimeout(partyBurst,260);
     if(SCREEN_CUES[id]) playCue(SCREEN_CUES[id]);   // DEV: start this screen's music/voice-over if one is configured in SCREEN_CUES
@@ -437,12 +486,27 @@
     env.classList.add('open');
     setTimeout(()=>{modal.classList.add('show');playCue(SCREEN_CUES.letter)},1700);   // DEV: letter appears, then its voice-over starts
   });
-  document.getElementById('close').onclick=()=>{modal.classList.remove('show');stopCue()};
+  document.getElementById('close').onclick=()=>{
+    modal.classList.remove('show');
+    stopCue();
+    document.getElementById('continueLetter').classList.add('show');
+  };
+  // Keep the letter dismissible with Escape or by clicking the dimmed backdrop.
+  function closeLetter(){
+    if(!modal.classList.contains('show')) return;
+    modal.classList.remove('show');
+    stopCue();
+    document.getElementById('continueLetter').classList.add('show');
+  }
+  document.addEventListener('keydown',e=>{if(e.key==='Escape') closeLetter()});
+  modal.addEventListener('click',e=>{if(e.target===modal) closeLetter()});
   document.getElementById('reread').onclick=()=>{
-    modal.classList.remove('show');stopCue();env.classList.remove('open');
+    modal.classList.remove('show');stopCue();
+    document.getElementById('continueLetter').classList.remove('show');
+    env.classList.remove('open');
     setTimeout(()=>env.click(),500);
   };
-  document.getElementById('next').onclick=()=>{modal.classList.remove('show');go('s11')};
+  document.getElementById('next').onclick=()=>{modal.classList.remove('show');stopCue();go('s11')};
 
   // DEV: LOVE-HEART ANIMATION (screen 1b) - types the text, then packs hundreds of small "I LOVE YOU" words into a heart on the canvas. Tune speed with the "150" frames and the 4500ms auto-advance.
   // "I LOVE YOU" typing -> heart made of hundreds of words
@@ -579,7 +643,34 @@
 
   // DEV: BUTTON EXTRAS - marks the wrong-answer buttons as sad (.no) and sprinkles hearts on hover/click for every .btn.
   // Button personality: "no" buttons look sad, every button sprinkles hearts
-  document.querySelectorAll('[data-go="s3"],[data-go="s5"]').forEach(b=>b.classList.add('no'));
+  document.querySelectorAll('[data-go="s3"]').forEach(b=>b.classList.add('no'));
+  // DEV: QUESTION 2 text box - her own typed answer also continues to the reply screen (s5b). Enter key works too.
+  // DEV: ANSWER TRACKING - records every choice she makes and sends them to YOU (see ANSWER_ENDPOINT below).
+  // Setup (free, 2 min): go to https://formspree.io , sign up, "New form", copy the form URL (looks like https://formspree.io/f/abcdwxyz)
+  // and paste it between the quotes below. Formspree then emails you her answers. Leave '' to disable.
+  const ANSWER_ENDPOINT='';
+  const answerLog=[]; let answersSent=false;
+  const QTITLE={s2:'Are you ready?',s4:'Q1: Relive one moment with me',s5:'Q2: One thing that makes you smile',s6b:'Q3: Do you know how special you are to me?'};
+  function logAnswer(screen,text){ answerLog.push({time:new Date().toLocaleString(),question:QTITLE[screen]||screen,answer:text});
+    try{localStorage.setItem('sayuAnswers',JSON.stringify(answerLog))}catch(e){} }
+  document.addEventListener('click',e=>{
+    const b=e.target.closest&&e.target.closest('.btn[data-go]'), sc=b&&b.closest('.screen');
+    if(b&&sc&&QTITLE[sc.id]) logAnswer(sc.id,b.textContent.trim());
+  },true);
+  function sendAnswers(){
+    if(answersSent||!ANSWER_ENDPOINT||!answerLog.length) return; answersSent=true;
+    const lines=answerLog.map(a=>`[${a.time}] ${a.question}  ->  ${a.answer}`).join('\n');
+    const fd=new FormData(); fd.append('subject','Sayu answered your birthday page 💗'); fd.append('answers',lines);
+    if(navigator.sendBeacon) navigator.sendBeacon(ANSWER_ENDPOINT,fd);
+    else fetch(ANSWER_ENDPOINT,{method:'POST',body:fd,headers:{Accept:'application/json'}}).catch(()=>{});
+  }
+  window.addEventListener('pagehide',sendAnswers);   // if she leaves early, still sends what she picked so far
+  (function(){
+    const inp=document.getElementById('ownAnswer'), send=document.getElementById('ownSend');
+    const submit=()=>{ if(inp.value.trim()){ logAnswer('s5','(typed) '+inp.value.trim()); go('s5b'); } else inp.focus(); };
+    send.addEventListener('click',submit);
+    inp.addEventListener('keydown',e=>{ if(e.key==='Enter') submit(); });
+  })();
   function loveBurst(b,n,spread,radial){
     const r=b.getBoundingClientRect(), sym=['♥','♥','♡','✦','❤'], col=['#ff2d55','#ff6b8b','#ffb3c6','#ffd24a','#fff'];
     for(let i=0;i<n;i++){
