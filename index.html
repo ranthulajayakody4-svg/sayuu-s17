@@ -739,18 +739,30 @@
   // How it works: background.mp3 loops from her first tap to the end. Whenever a cue plays, the background is
   // smoothly lowered to BG_DUCKED, then smoothly raised back to BG_NORMAL when the cue finishes.
   // A cue ends by itself when its file ends (so voice-over length is detected automatically), or after maxSeconds if you set it.
-  const AUDIO_FOLDER='audio/';
-  const BG_FILE=AUDIO_FOLDER+'background.mp3';   // DEV: looping background track
+  const AUDIO_FOLDER='audios/';                  // DEV: repo folder that holds the tracks
+  const BG_FILE=AUDIO_FOLDER+'bgmusic';          // DEV: looping background track (file name WITHOUT extension)
+  // DEV: file names above/below are given without an extension on purpose - the page finds the right one (mp3, m4a, wav, ogg, aac) by itself.
+  const AUDIO_EXTS=['mp3','m4a','wav','ogg','aac','MP3','M4A','WAV','OGG','AAC'];
+  const audioCache={};
+  async function resolveAudio(base){   // returns the first existing file for this base name, or null if none is uploaded
+    if(base in audioCache) return audioCache[base];
+    for(const ext of AUDIO_EXTS){
+      try{ const r=await fetch(base+'.'+ext,{method:'HEAD'}); if(r.ok) return audioCache[base]=base+'.'+ext; }catch(e){}
+    }
+    return audioCache[base]=null;
+  }
   const BG_NORMAL=.5;                            // DEV: background volume normally (0 to 1)
   const BG_DUCKED=.1;                            // DEV: background volume while a cue/voice-over plays
   // DEV: SCREEN_CUES - which track plays when a screen opens. Key = screen id. Add more screens the same way, e.g.
   //      s6:{file:AUDIO_FOLDER+'aww.mp3'}, s11:{file:AUDIO_FOLDER+'memories.mp3', volume:.8}
   const SCREEN_CUES={
-    s8:{file:AUDIO_FOLDER+'teaser.mp3', maxSeconds:5, volume:1},   // DEV: plays when she taps "Wanna know?"; cut after 5 seconds with a short fade-out
-    s9:{file:AUDIO_FOLDER+'birthday-voice.mp3', volume:1},         // DEV: dubbing / voice wish on the birthday photo screen; runs for the full file length
-    letter:{file:AUDIO_FOLDER+'letter-voice.mp3', volume:1}        // DEV: dubbing of the letter; starts when the letter modal opens
+    s8:{file:AUDIO_FOLDER+'5sec', maxSeconds:5, volume:1},         // DEV: teaser - plays when she taps "Wanna know?"; cut after 5 seconds with a short fade-out
+    s9:{file:AUDIO_FOLDER+'birthday-voice', volume:1},             // DEV: dubbing / voice wish on the birthday photo screen (skipped silently if the file isn't uploaded)
+    letter:{file:AUDIO_FOLDER+'letter-voice', volume:1}            // DEV: dubbing of the letter (skipped silently if the file isn't uploaded)
   };
-  const bg=new Audio(BG_FILE); bg.loop=true; bg.volume=0;
+  const bg=new Audio(); bg.loop=true; bg.volume=0; bg.preload='auto';
+  let bgReady=false, bgWantPlay=false;
+  resolveAudio(BG_FILE).then(src=>{ if(!src) return; bg.src=src; bgReady=true; if(bgWantPlay) startBgNow(); });   // DEV: finds bgmusic.* while the page loads
   let bgStarted=false, muted=false, fadeT=null, cueAudio=null, cueTimer=null;
   // DEV: fadeBg - smoothly moves the background volume to a target over `ms` milliseconds.
   function fadeBg(to,ms){
@@ -759,18 +771,24 @@
       bg.volume=Math.max(0,Math.min(1,from+(to-from)*k)); if(k>=1) clearInterval(fadeT)},40);
   }
   // DEV: startBg - browsers only allow sound after a tap, so music starts on her very first tap (the "Click to open" button).
-  function startBg(){ if(bgStarted) return; bgStarted=true; bg.play().then(()=>fadeBg(cueAudio?BG_DUCKED:BG_NORMAL,1500)).catch(()=>{}); }
+  function startBgNow(){ bg.play().then(()=>fadeBg(cueAudio?BG_DUCKED:BG_NORMAL,1500)).catch(()=>{}); }
+  function startBg(){ if(bgStarted) return; bgStarted=true; bgWantPlay=true; if(bgReady) startBgNow(); }
   document.addEventListener('pointerdown',startBg,{once:true});
   // DEV: stopCue - ends the current cue (if any) and brings the background music back up.
   function stopCue(){
+    cueToken++;   // cancels any cue that is still being looked up
     clearTimeout(cueTimer);
     if(cueAudio){cueAudio.pause();cueAudio=null;}
     fadeBg(BG_NORMAL,1200);
   }
   // DEV: playCue - lowers the background, plays the track, and restores the background when it ends (or errors, e.g. file missing).
-  function playCue(cfg){
-    if(!cfg) return; stopCue(); fadeBg(BG_DUCKED,500);
-    const a=new Audio(cfg.file); a.volume=cfg.volume==null?1:cfg.volume; a.muted=muted; cueAudio=a;
+  let cueToken=0;
+  async function playCue(cfg){
+    if(!cfg) return; stopCue(); const tok=++cueToken;
+    const src=await resolveAudio(cfg.file);
+    if(!src||tok!==cueToken) return;   // file not uploaded, or she already moved on to another screen
+    fadeBg(BG_DUCKED,500);
+    const a=new Audio(src); a.volume=cfg.volume==null?1:cfg.volume; a.muted=muted; cueAudio=a;
     const done=()=>{ if(cueAudio===a) stopCue(); };
     a.addEventListener('ended',done);   // DEV: this is where the track's real duration is detected - background returns exactly when it finishes
     a.addEventListener('error',done);
