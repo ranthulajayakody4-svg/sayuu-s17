@@ -406,7 +406,6 @@
       <div class="now">★ Now Showing ★</div>
       <div class="film">INFINITY CLIPS</div>
       <div class="by">Sayu &amp; Ranu · 100 moments</div>
-      <div id="thMsg" style="display:none;margin-top:.6rem;color:#ffc3d4;font-size:.85rem;letter-spacing:.08em;padding:0 1rem"></div>
     </div>
     <div class="seats"></div>
     <div class="th-ui">
@@ -582,8 +581,9 @@
   // ===== DEV: PHOTOS / MEMORY THEATRE (screen 11) =====
   // DEV: PHOTOS - put the 100 pictures in the repo folder "sayuu100" and name them 1.jpg, 2.jpg ... 100.jpg (no unique URLs needed).
   // If your files are .jpeg/.png/.webp change PHOTO_EXT. Names are case-sensitive on GitHub Pages.
-  // Your setup: folder "sayuu100". The page finds every photo in it by itself (any ending: JPEG/jpg/png...) and repeats them until all 100 cells are filled.
-  const PHOTO_FOLDER='sayuu100', PHOTO_EXT='JPEG', PHOTO_COUNT=0;   // PHOTO_COUNT=0 -> the page finds your photos by itself (recommended)
+  // Your setup: folder "sayuu100", files 1.JPEG ... 43.JPEG (capital letters matter on GitHub). PHOTO_COUNT = how many photos you really have;
+  // they repeat in order to fill all 100 cells. Set PHOTO_COUNT=0 to use the automatic folder reader instead.
+  const PHOTO_FOLDER='sayuu100', PHOTO_EXT='JPEG', PHOTO_COUNT=43;
   const USE_PLACEHOLDERS=false;   // DEV: set true only to preview the layout with random web images before your photos are uploaded
   const N=100, ROWS=4, COLS=25;   // DEV: total photos = ROWS x COLS (4 x 25 = 100). Change both together if you use a different count.
   // DEV: AUTO PHOTO LIST - no renaming needed. The page reads every image inside PHOTO_FOLDER straight from your public GitHub repo
@@ -593,30 +593,8 @@
   let PHOTO_LIST=null;
   const IMG_RE=/\.(jpe?g|png|webp|gif|avif)$/i;
   const encPath=p=>p.split('/').map(encodeURIComponent).join('/');
-  let photoListPromise=null;
-  const loadPhotoList=()=>photoListPromise||(photoListPromise=loadPhotoListReal());
-  const bdayName=(typeof BIRTHDAY_FILE_NAME==='string')?BIRTHDAY_FILE_NAME:'bdb.jpeg';   // the birthday-screen picture is not part of the theatre
-  // DEV: probePhotos - last-resort finder: looks for 1.*, 2.* ... 150.* in the folder (any common ending) and keeps the ones that exist.
-  async function probePhotos(){
-    const test=u=>new Promise(r=>{const im=new Image(); im.onload=()=>r(true); im.onerror=()=>r(false); im.src=u;});
-    const url=(n,e)=>encPath(PHOTO_FOLDER)+'/'+n+'.'+e;
-    let ext=null;
-    for(const e of EXT_TRY){ for(const n of [1,2,3]){ if(await test(url(n,e))){ext=e;break;} } if(ext) break; }
-    if(!ext) return [];
-    const found={}, nums=Array.from({length:150},(_,k)=>k+1);
-    const run=async(list,e)=>{ let idx=0; await Promise.all(Array.from({length:12},async()=>{ while(idx<list.length){ const n=list[idx++]; if(await test(url(n,e))) found[n]=url(n,e); } })); };
-    await run(nums,ext);
-    const maxN=Math.max(0,...Object.keys(found).map(Number));
-    for(const e of EXT_TRY){ if(e===ext) continue; const miss=nums.filter(n=>n<=maxN&&!found[n]); if(!miss.length) break; await run(miss,e); }
-    goodExt=ext;
-    return Object.keys(found).map(Number).sort((a,b)=>a-b).map(n=>found[n]);
-  }
-  async function loadPhotoListReal(){
+  async function loadPhotoList(){
     if(USE_PLACEHOLDERS) return;
-    try{ await loadPhotoListSteps(); }catch(e){}
-    if(!PHOTO_LIST){ try{ const l=await probePhotos(); if(l.length) PHOTO_LIST=l; }catch(e){} }
-  }
-  async function loadPhotoListSteps(){
     try{   // 1) optional manual list: PHOTO_FOLDER/photos.json  =  ["a.jpg","b.jpg",...]
       const m=await fetch(encPath(PHOTO_FOLDER)+'/photos.json',{cache:'no-cache'});
       if(m.ok){const names=(await m.json()).filter(n=>IMG_RE.test(n)); if(names.length){PHOTO_LIST=names.map(n=>encPath(PHOTO_FOLDER)+'/'+encodeURIComponent(n)); return;}}
@@ -628,17 +606,14 @@
       if(!owner||!repo) return;
       const r=await fetch(`https://api.github.com/repos/${owner}/${repo}/contents/${encPath(PHOTO_FOLDER)}`);
       if(!r.ok) return;
-      const names=(await r.json()).filter(f=>f.type==='file'&&IMG_RE.test(f.name)&&f.name.toLowerCase()!==bdayName.toLowerCase()).map(f=>f.name)
+      const names=(await r.json()).filter(f=>f.type==='file'&&IMG_RE.test(f.name)).map(f=>f.name)
         .sort((a,b)=>a.localeCompare(b,undefined,{numeric:true}));
       if(names.length) PHOTO_LIST=names.map(n=>encPath(PHOTO_FOLDER)+'/'+encodeURIComponent(n));
     }catch(e){}
   }
   const photo=(i,big)=>USE_PLACEHOLDERS?`https://picsum.photos/seed/sayu-love-${i+1}/${big?'900/1200':'360/480'}`
     :PHOTO_LIST?PHOTO_LIST[i%PHOTO_LIST.length]
-    :`${PHOTO_FOLDER}/${(PHOTO_COUNT>0?i%PHOTO_COUNT:i)+1}.${goodExt||PHOTO_EXT}`;   // numbered names 1.JPEG, 2.JPEG ... repeating after PHOTO_COUNT
-  // DEV: EXTENSION SAFETY NET - if a photo does not load with PHOTO_EXT, the page quietly tries these other endings (and remembers the one that works).
-  let goodExt=null;
-  const EXT_TRY=[PHOTO_EXT,'JPEG','jpeg','jpg','JPG','png','PNG','webp'].filter((e,k,a)=>a.indexOf(e)===k);
+    :`${PHOTO_FOLDER}/${(PHOTO_COUNT>0?i%PHOTO_COUNT:i)+1}.${PHOTO_EXT}`;   // numbered names 1.JPEG, 2.JPEG ... repeating after PHOTO_COUNT
   // DEV: BIRTHDAY PHOTO - the picture on the "HAPPY BIRTHDAY SAYU" screen is taken from the same photo folder, so no code change is needed.
   //      BIRTHDAY_PHOTO = 1 uses the 1st photo, 2 the 2nd ... or 'random' to pick a different one each time. If a number is bigger than your photo count it wraps around.
   const BIRTHDAY_FILE='sayuu100/bdb.jpeg';   // DEV: a specific image to use (case-sensitive). Set to '' to pick from the numbered photos instead.
@@ -656,11 +631,8 @@
   let theatreLoading=false;
   async function initTheatre(){
     if(theatreReady||theatreLoading) return; theatreLoading=true;
-    const msg=document.getElementById('thMsg'); msg.textContent='Loading our memories… 💗'; msg.style.display='block';
-    await loadPhotoList();   // DEV: finds every photo in the folder first, then builds the 100 tiles
+    if(!(PHOTO_COUNT>0)) await loadPhotoList();   // DEV: (skipped when PHOTO_COUNT is set) finds every photo in the folder first, then builds the 100 tiles
     buildTheatre();
-    if(PHOTO_LIST){ msg.style.display='none'; }
-    else msg.textContent='Could not find photos in the "'+PHOTO_FOLDER+'" folder (looked for 1.JPEG, 1.jpg, 2.JPEG …). Check the folder name and file numbers.';
   }
   function buildTheatre(){
     if(theatreReady) return; theatreReady=true;
@@ -672,13 +644,7 @@
       el.className='ph'; el.dataset.i=i;
       el.style.setProperty('--a',(c*360/COLS+(r%2)*(180/COLS))+'deg');
       el.style.setProperty('--y',((r-(ROWS-1)/2)*(Hd+gap))+'px');
-      im.alt='Memory '+(i+1); im.decoding='async';
-      (function(im,el,i){   // try the configured ending first, then the safety-net endings; drop the tile only if none work
-        let k=0; const n=(PHOTO_LIST?0:(PHOTO_COUNT>0?i%PHOTO_COUNT:i)+1);
-        im.onload=()=>{ if(!PHOTO_LIST&&!goodExt) goodExt=EXT_TRY[k]; };
-        im.onerror=()=>{ if(PHOTO_LIST||++k>=EXT_TRY.length){ el.remove(); return; } im.src=`${PHOTO_FOLDER}/${n}.${EXT_TRY[k]}`; };
-        im.src=photo(i);
-      })(im,el,i);
+      im.src=photo(i); im.alt='Memory '+(i+1); im.decoding='async'; im.onerror=()=>im.remove();
       el.appendChild(im); ring.appendChild(el);
       el.addEventListener('mouseenter',()=>hovering=true); el.addEventListener('mouseleave',()=>hovering=false);
       el.addEventListener('click',()=>{ if(moved<6) openLb(i) });
@@ -789,13 +755,11 @@
   const BG_DUCKED=.1;                            // DEV: background volume while a cue/voice-over plays
   // DEV: SCREEN_CUES - which track plays when a screen opens. Key = screen id. Add more screens the same way, e.g.
   //      s6:{file:AUDIO_FOLDER+'aww.mp3'}, s11:{file:AUDIO_FOLDER+'memories.mp3', volume:.8}
-  // DEV: VOICE - the dubbing/voice track is audios/voice.* . VOICE_ON says where it plays: 's9' = on the "HAPPY BIRTHDAY SAYU" screen,
-  //      'letter' = when the letter opens. (Only one of the two; change the word below to move it.)
-  const VOICE_FILE=AUDIO_FOLDER+'voice', VOICE_ON='s9';
   const SCREEN_CUES={
-    s8:{file:AUDIO_FOLDER+'5sec', maxSeconds:5, volume:1}          // DEV: teaser - plays when she taps "Wanna know?"; cut after 5 seconds with a short fade-out
+    s8:{file:AUDIO_FOLDER+'5sec', maxSeconds:5, volume:1},         // DEV: teaser - plays when she taps "Wanna know?"; cut after 5 seconds with a short fade-out
+    s9:{file:AUDIO_FOLDER+'birthday-voice', volume:1},             // DEV: dubbing / voice wish on the birthday photo screen (skipped silently if the file isn't uploaded)
+    letter:{file:AUDIO_FOLDER+'letter-voice', volume:1}            // DEV: dubbing of the letter (skipped silently if the file isn't uploaded)
   };
-  SCREEN_CUES[VOICE_ON]={file:VOICE_FILE, volume:1};               // DEV: voice track; runs for the full file length, then the background music comes back up
   const bg=new Audio(); bg.loop=true; bg.volume=0; bg.preload='auto';
   let bgReady=false, bgWantPlay=false;
   resolveAudio(BG_FILE).then(src=>{ if(!src) return; bg.src=src; bgReady=true; if(bgWantPlay) startBgNow(); });   // DEV: finds bgmusic.* while the page loads
