@@ -613,7 +613,10 @@
   }
   const photo=(i,big)=>USE_PLACEHOLDERS?`https://picsum.photos/seed/sayu-love-${i+1}/${big?'900/1200':'360/480'}`
     :PHOTO_LIST?PHOTO_LIST[i%PHOTO_LIST.length]
-    :`${PHOTO_FOLDER}/${(PHOTO_COUNT>0?i%PHOTO_COUNT:i)+1}.${PHOTO_EXT}`;   // numbered names 1.JPEG, 2.JPEG ... repeating after PHOTO_COUNT
+    :`${PHOTO_FOLDER}/${(PHOTO_COUNT>0?i%PHOTO_COUNT:i)+1}.${goodExt||PHOTO_EXT}`;   // numbered names 1.JPEG, 2.JPEG ... repeating after PHOTO_COUNT
+  // DEV: EXTENSION SAFETY NET - if a photo does not load with PHOTO_EXT, the page quietly tries these other endings (and remembers the one that works).
+  let goodExt=null;
+  const EXT_TRY=[PHOTO_EXT,'JPEG','jpeg','jpg','JPG','png','PNG','webp'].filter((e,k,a)=>a.indexOf(e)===k);
   // DEV: BIRTHDAY PHOTO - the picture on the "HAPPY BIRTHDAY SAYU" screen is taken from the same photo folder, so no code change is needed.
   //      BIRTHDAY_PHOTO = 1 uses the 1st photo, 2 the 2nd ... or 'random' to pick a different one each time. If a number is bigger than your photo count it wraps around.
   const BIRTHDAY_FILE='sayuu100/bdb.jpeg';   // DEV: a specific image to use (case-sensitive). Set to '' to pick from the numbered photos instead.
@@ -644,7 +647,13 @@
       el.className='ph'; el.dataset.i=i;
       el.style.setProperty('--a',(c*360/COLS+(r%2)*(180/COLS))+'deg');
       el.style.setProperty('--y',((r-(ROWS-1)/2)*(Hd+gap))+'px');
-      im.src=photo(i); im.alt='Memory '+(i+1); im.decoding='async'; im.onerror=()=>im.remove();
+      im.alt='Memory '+(i+1); im.decoding='async';
+      (function(im,el,i){   // try the configured ending first, then the safety-net endings; drop the tile only if none work
+        let k=0; const n=(PHOTO_LIST?0:(PHOTO_COUNT>0?i%PHOTO_COUNT:i)+1);
+        im.onload=()=>{ if(!PHOTO_LIST&&!goodExt) goodExt=EXT_TRY[k]; };
+        im.onerror=()=>{ if(PHOTO_LIST||++k>=EXT_TRY.length){ el.remove(); return; } im.src=`${PHOTO_FOLDER}/${n}.${EXT_TRY[k]}`; };
+        im.src=photo(i);
+      })(im,el,i);
       el.appendChild(im); ring.appendChild(el);
       el.addEventListener('mouseenter',()=>hovering=true); el.addEventListener('mouseleave',()=>hovering=false);
       el.addEventListener('click',()=>{ if(moved<6) openLb(i) });
@@ -755,11 +764,13 @@
   const BG_DUCKED=.1;                            // DEV: background volume while a cue/voice-over plays
   // DEV: SCREEN_CUES - which track plays when a screen opens. Key = screen id. Add more screens the same way, e.g.
   //      s6:{file:AUDIO_FOLDER+'aww.mp3'}, s11:{file:AUDIO_FOLDER+'memories.mp3', volume:.8}
+  // DEV: VOICE - the dubbing/voice track is audios/voice.* . VOICE_ON says where it plays: 's9' = on the "HAPPY BIRTHDAY SAYU" screen,
+  //      'letter' = when the letter opens. (Only one of the two; change the word below to move it.)
+  const VOICE_FILE=AUDIO_FOLDER+'voice', VOICE_ON='s9';
   const SCREEN_CUES={
-    s8:{file:AUDIO_FOLDER+'5sec', maxSeconds:5, volume:1},         // DEV: teaser - plays when she taps "Wanna know?"; cut after 5 seconds with a short fade-out
-    s9:{file:AUDIO_FOLDER+'birthday-voice', volume:1},             // DEV: dubbing / voice wish on the birthday photo screen (skipped silently if the file isn't uploaded)
-    letter:{file:AUDIO_FOLDER+'letter-voice', volume:1}            // DEV: dubbing of the letter (skipped silently if the file isn't uploaded)
+    s8:{file:AUDIO_FOLDER+'5sec', maxSeconds:5, volume:1}          // DEV: teaser - plays when she taps "Wanna know?"; cut after 5 seconds with a short fade-out
   };
+  SCREEN_CUES[VOICE_ON]={file:VOICE_FILE, volume:1};               // DEV: voice track; runs for the full file length, then the background music comes back up
   const bg=new Audio(); bg.loop=true; bg.volume=0; bg.preload='auto';
   let bgReady=false, bgWantPlay=false;
   resolveAudio(BG_FILE).then(src=>{ if(!src) return; bg.src=src; bgReady=true; if(bgWantPlay) startBgNow(); });   // DEV: finds bgmusic.* while the page loads
