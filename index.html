@@ -8,10 +8,9 @@
   Folder layout in the repo:
     index.html
     sayuu100/1.jpg ... sayuu100/100.jpg   <- the 100 photos for the final "Memory Theatre" screen
-    audio/background.mp3                  <- looping background music (starts on her first tap, plays to the end)
-    audio/teaser.mp3                      <- ~5 sec sting when she taps "Wanna know?" (background music is lowered meanwhile)
-    audio/birthday-voice.mp3              <- dubbing / voice wish on the "HAPPY BIRTHDAY SAYU" screen (length is auto-detected)
-    audio/letter-voice.mp3                <- dubbing read-out of the letter, plays when the letter opens (length is auto-detected)
+    audios/bgmusic.mp3                    <- background music (starts on her first tap, plays once from beginning to end)
+    audios/5sec.mp3                       <- ~5 sec sting that plays on the "YOUR 17TH BIRTHDAY" reveal (background music is lowered meanwhile)
+    audios/voice.mp3                      <- voice read-out of the letter, plays the moment she taps the envelope (background lowered meanwhile)
   Where to edit: search this file for "DEV:" to jump to every explained section.
     - DEV: PHOTOS  -> photo folder name / file extension
     - DEV: AUDIO   -> every music file, volumes, and which screen plays which track
@@ -280,7 +279,7 @@
     <button class="btn" data-go="s2">Try again 🥲</button>
   </section>
 
-  <!-- DEV: SCREEN 4 - "How much do I love you?". "A little" goes to the sad screen s5, the other two go to s6. -->
+  <!-- DEV: SCREEN 4 - Question 1 (a little memory). Every option goes to s6. -->
   <section class="screen" id="s4">
     <div class="eyebrow">💗 Question 1 — A little memory</div>
     <h2 class="q">Let's start with something easy… 🫶🏻</h2>
@@ -293,7 +292,7 @@
     </div>
   </section>
 
-  <!-- DEV: SCREEN 5 - Second wrong-answer screen. "Try again" returns to s4. -->
+  <!-- DEV: SCREEN 5 - Question 2. Options (or her own typed answer) go to s5b. -->
   <section class="screen" id="s5">
     <div class="eyebrow">💗 Question 2 — Tell me the truth</div>
     <h2 class="q">Okay, now tell me the truth… 👀</h2>
@@ -345,7 +344,7 @@
     </div>
   </section>
 
-  <!-- DEV: SCREEN 7 - Teaser. Tapping "Wanna know?" opens s8 AND triggers the 5-second teaser music (see SCREEN_CUES.s8). -->
+  <!-- DEV: SCREEN 7 - Teaser. Tapping "Wanna know?" opens s8 AND plays the 5sec track (see SCREEN_CUES.s8). -->
   <section class="screen" id="s7">
     <h2>Do you know what today's date is?</h2>
     <div class="glow">TODAY IS</div>
@@ -374,15 +373,15 @@
     <button class="btn" data-go="s9">Yayyyyyyy ✨</button>
   </section>
 
-  <!-- DEV: SCREEN 9 - Birthday wish with her photo. Replace the img src below with her photo. The birthday voice-over (dubbing) plays automatically here (SCREEN_CUES.s9). -->
+  <!-- DEV: SCREEN 9 - Birthday wish with her photo. Replace the img src below with her photo. (No voice-over here now; only the background music plays.) -->
   <section class="screen" id="s9">
     <h1 class="gold">HAPPY BIRTHDAY SAYU 💛</h1>
-   
-    <img class="frame" alt="Sayu" src="sayuu/bdb.jpg">
+
+      <img class="frame" alt="Sayu" src="sayuu100/bdb.jpeg">
     <button class="btn" data-go="s10">Here is a surprise 🙃</button>
   </section>
 
-  <!-- DEV: SCREEN 10 - Kraft envelope with wax seal. Tapping it opens the flap, slides the paper up, then shows the letter modal below. -->
+  <!-- DEV: SCREEN 10 - Kraft envelope with wax seal. Tapping it opens the flap, slides the paper up, plays the voice track, then shows the letter modal below. -->
   <section class="screen" id="s10">
     <h2 style="color:#e8101a;transform:rotate(-4deg)">A letter for you</h2>
     <div class="env" id="env">
@@ -416,7 +415,7 @@
   </section>
 </div>
 
-<!-- DEV: LETTER MODAL - the full letter text. Edit the paragraphs/list items here. Letter voice-over (dubbing) starts when this opens (SCREEN_CUES.letter). -->
+<!-- DEV: LETTER MODAL - the full letter text. Edit the paragraphs/list items here. The voice track starts the moment she taps the envelope (not when this opens). -->
 <div id="modal">
   <div id="letter">
     <h3>Happy Birthday Sayu 💗</h3>
@@ -478,13 +477,14 @@
   }
   document.querySelectorAll('[data-go]').forEach(b=>b.addEventListener('click',()=>go(b.dataset.go)));
 
-  // DEV: ENVELOPE - first tap opens seal + flap + paper; after 1.7s the letter modal appears. Buttons inside the letter: read again / close / next page.
+  // DEV: ENVELOPE - first tap opens seal + flap + paper and IMMEDIATELY starts the voice track (background music is lowered); after 1.7s the letter modal appears. Buttons inside the letter: read again / close / next page.
   // Envelope
   const env=document.getElementById('env'), modal=document.getElementById('modal');
   env.addEventListener('click',()=>{
     if(env.classList.contains('open')) return;
     env.classList.add('open');
-    setTimeout(()=>{modal.classList.add('show');playCue(SCREEN_CUES.letter)},1700);   // DEV: letter appears, then its voice-over starts
+    playCue(SCREEN_CUES.letter);                        // DEV: voice starts on the tap, background volume goes down
+    setTimeout(()=>modal.classList.add('show'),1700);   // DEV: letter appears after the opening animation
   });
   document.getElementById('close').onclick=()=>{
     modal.classList.remove('show');
@@ -718,23 +718,22 @@
   document.addEventListener('click',e=>{const b=e.target.closest&&e.target.closest('.btn'); if(b) loveBurst(b,16,110,true)});
 
   // =====================================================================
-  // DEV: AUDIO - background music + short "cues" (teaser sting, voice-overs)
+  // DEV: AUDIO - background music + short "cues" (5sec sting, voice)
   // =====================================================================
-  // How it works: background.mp3 loops from her first tap to the end. Whenever a cue plays, the background is
+  // How it works: bgmusic.mp3 plays once, from the beginning to the end, starting at her first tap.
+  // Whenever a cue plays (5sec on the 17th-birthday reveal, voice when she taps the envelope), the background is
   // smoothly lowered to BG_DUCKED, then smoothly raised back to BG_NORMAL when the cue finishes.
-  // A cue ends by itself when its file ends (so voice-over length is detected automatically), or after maxSeconds if you set it.
-  const AUDIO_FOLDER='audio/';
-  const BG_FILE=AUDIO_FOLDER+'background.mp3';   // DEV: looping background track
-  const BG_NORMAL=.5;                            // DEV: background volume normally (0 to 1)
-  const BG_DUCKED=.1;                            // DEV: background volume while a cue/voice-over plays
-  // DEV: SCREEN_CUES - which track plays when a screen opens. Key = screen id. Add more screens the same way, e.g.
-  //      s6:{file:AUDIO_FOLDER+'aww.mp3'}, s11:{file:AUDIO_FOLDER+'memories.mp3', volume:.8}
+  // A cue ends by itself when its file ends, so the real length of each track is detected automatically.
+  const AUDIO_FOLDER='audios/';
+  const BG_FILE=AUDIO_FOLDER+'bgmusic.mp3';   // DEV: background track (plays once, beginning to end)
+  const BG_NORMAL=.5;                         // DEV: background volume normally (0 to 1)
+  const BG_DUCKED=.1;                         // DEV: background volume while 5sec / voice plays
+  // DEV: SCREEN_CUES - which track plays when something opens. Key = screen id (or "letter" for the envelope tap).
   const SCREEN_CUES={
-    s8:{file:AUDIO_FOLDER+'teaser.mp3', maxSeconds:5, volume:1},   // DEV: plays when she taps "Wanna know?"; cut after 5 seconds with a short fade-out
-    s9:{file:AUDIO_FOLDER+'birthday-voice.mp3', volume:1},         // DEV: dubbing / voice wish on the birthday photo screen; runs for the full file length
-    letter:{file:AUDIO_FOLDER+'letter-voice.mp3', volume:1}        // DEV: dubbing of the letter; starts when the letter modal opens
+    s8:{file:AUDIO_FOLDER+'5sec.mp3', volume:1},       // DEV: plays when the "YOUR 17TH BIRTHDAY" screen is revealed; background returns when it ends
+    letter:{file:AUDIO_FOLDER+'voice.mp3', volume:1}   // DEV: plays the moment she taps the envelope; background returns when it ends
   };
-  const bg=new Audio(BG_FILE); bg.loop=true; bg.volume=0;
+  const bg=new Audio(BG_FILE); bg.loop=false; bg.volume=0;   // DEV: loop=false -> plays once to the end. Set bg.loop=true if you want it to repeat.
   let bgStarted=false, muted=false, fadeT=null, cueAudio=null, cueTimer=null;
   // DEV: fadeBg - smoothly moves the background volume to a target over `ms` milliseconds.
   function fadeBg(to,ms){
@@ -758,7 +757,7 @@
     const done=()=>{ if(cueAudio===a) stopCue(); };
     a.addEventListener('ended',done);   // DEV: this is where the track's real duration is detected - background returns exactly when it finishes
     a.addEventListener('error',done);
-    if(cfg.maxSeconds){                 // DEV: optional hard limit (used for the 5-second teaser) with a quick fade-out
+    if(cfg.maxSeconds){                 // DEV: optional hard limit (not used now; add maxSeconds:N to a cue to cut it with a short fade-out)
       cueTimer=setTimeout(()=>{ let v=a.volume; const iv=setInterval(()=>{ v-=.1; if(v<=0){clearInterval(iv);done();} else a.volume=v; },40); },Math.max(0,cfg.maxSeconds*1000-400));
     }
     a.play().catch(done);
