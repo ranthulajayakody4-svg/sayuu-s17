@@ -61,7 +61,7 @@
     text-shadow:0 0 22px rgba(0,0,0,.35)}
   .big17 small{position:absolute;left:0;right:0;top:55%;font-family:serif;font-size:.8em;color:rgba(0,0,0,.08);z-index:-1}
   .gold{font-family:'Playfair Display',serif;color:#c9a227;text-shadow:1px 1px 0 #fff6;font-size:clamp(1.5rem,5vw,2.6rem)}
-  .frame{width:min(70vw,18rem);height:min(50vw,13rem);object-fit:cover;object-position:center 30%;border-radius:2.5rem;box-shadow:0 10px 30px rgba(0,0,0,.25);border:4px solid #fff}
+  .frame{width:min(70vw,18rem);height:min(50vw,13rem);object-fit:cover;border-radius:2.5rem;box-shadow:0 10px 30px rgba(0,0,0,.25);border:4px solid #fff}
   .kiss{animation:kiss 1.6s ease-in-out infinite}
   @keyframes kiss{0%,100%{transform:scale(1)}50%{transform:scale(1.1) rotate(-4deg)}}
   /* DEV: kraft envelope on screen 10 - back, paper, front pockets, flap and wax seal are stacked layers; .open triggers the opening animation. */
@@ -377,8 +377,8 @@
   <!-- DEV: SCREEN 9 - Birthday wish with her photo. Replace the img src below with her photo. The birthday voice-over (dubbing) plays automatically here (SCREEN_CUES.s9). -->
   <section class="screen" id="s9">
     <h1 class="gold">HAPPY BIRTHDAY SAYU 💛</h1>
-    <!-- DEV: this photo is picked automatically from the sayuu100 folder by setBirthdayPhoto() in the script (see BIRTHDAY_PHOTO). No src needed here. -->
-    <img class="frame" id="bdayPhoto" alt="Sayu">
+    <!-- Replace this src with her photo -->
+    <img class="frame" alt="Sayu" src="https://images.unsplash.com/photo-1518895949257-7621c3c786d7?auto=format&fit=crop&w=600&q=80">
     <button class="btn" data-go="s10">Here is a surprise 🙃</button>
   </section>
 
@@ -404,7 +404,7 @@
     <div class="curtain l"></div><div class="curtain r"></div><div class="valance"></div>
     <div class="th-title">
       <div class="now">★ Now Showing ★</div>
-      <div class="film">INFINITY CLIPS</div>
+      <div class="film">Our Love Story</div>
       <div class="by">Sayu &amp; Ranu · 100 moments</div>
     </div>
     <div class="seats"></div>
@@ -469,7 +469,6 @@
     document.getElementById(current).classList.remove('active');
     setTimeout(()=>document.getElementById(id).classList.add('active'),250);
     current=id;
-    if(id==='s7'||id==='s9') setBirthdayPhoto();   // DEV: pick her birthday photo from the folder (preloads at s7)
     if(id==='s7') sendAnswers();   // DEV: all questions done -> send her answers to you
     if(id==='s1b') setTimeout(runLove,300);
     if(id==='s8') setTimeout(partyBurst,260);
@@ -581,9 +580,7 @@
   // ===== DEV: PHOTOS / MEMORY THEATRE (screen 11) =====
   // DEV: PHOTOS - put the 100 pictures in the repo folder "sayuu100" and name them 1.jpg, 2.jpg ... 100.jpg (no unique URLs needed).
   // If your files are .jpeg/.png/.webp change PHOTO_EXT. Names are case-sensitive on GitHub Pages.
-  // Your setup: folder "sayuu100", files 1.JPEG ... 43.JPEG (capital letters matter on GitHub). PHOTO_COUNT = how many photos you really have;
-  // they repeat in order to fill all 100 cells. Set PHOTO_COUNT=0 to use the automatic folder reader instead.
-  const PHOTO_FOLDER='sayuu100', PHOTO_EXT='JPEG', PHOTO_COUNT=43;
+  const PHOTO_FOLDER='sayuu100', PHOTO_EXT='jpg';
   const USE_PLACEHOLDERS=false;   // DEV: set true only to preview the layout with random web images before your photos are uploaded
   const N=100, ROWS=4, COLS=25;   // DEV: total photos = ROWS x COLS (4 x 25 = 100). Change both together if you use a different count.
   // DEV: AUTO PHOTO LIST - no renaming needed. The page reads every image inside PHOTO_FOLDER straight from your public GitHub repo
@@ -612,26 +609,13 @@
     }catch(e){}
   }
   const photo=(i,big)=>USE_PLACEHOLDERS?`https://picsum.photos/seed/sayu-love-${i+1}/${big?'900/1200':'360/480'}`
-    :PHOTO_LIST?PHOTO_LIST[i%PHOTO_LIST.length]
-    :`${PHOTO_FOLDER}/${(PHOTO_COUNT>0?i%PHOTO_COUNT:i)+1}.${PHOTO_EXT}`;   // numbered names 1.JPEG, 2.JPEG ... repeating after PHOTO_COUNT
-  // DEV: BIRTHDAY PHOTO - the picture on the "HAPPY BIRTHDAY SAYU" screen is taken from the same photo folder, so no code change is needed.
-  //      BIRTHDAY_PHOTO = 1 uses the 1st photo, 2 the 2nd ... or 'random' to pick a different one each time. If a number is bigger than your photo count it wraps around.
-  const BIRTHDAY_FILE='sayuu100/bdb.jpeg';   // DEV: a specific image to use (case-sensitive). Set to '' to pick from the numbered photos instead.
-  const BIRTHDAY_PHOTO=1;
-  async function setBirthdayPhoto(){
-    const img=document.getElementById('bdayPhoto'); if(!img||img.dataset.set) return;
-    if(BIRTHDAY_FILE){ img.src=BIRTHDAY_FILE; img.dataset.set='1'; return; }
-    if(!(PHOTO_COUNT>0)) await loadPhotoList();
-    const total=PHOTO_COUNT>0?PHOTO_COUNT:(PHOTO_LIST?PHOTO_LIST.length:N);
-    const idx=BIRTHDAY_PHOTO==='random'?Math.floor(Math.random()*total):(Math.max(1,BIRTHDAY_PHOTO)-1)%total;
-    img.src=photo(idx,true); img.dataset.set='1';
-  }
+    :PHOTO_LIST?PHOTO_LIST[i%PHOTO_LIST.length]:`${PHOTO_FOLDER}/${i+1}.${PHOTO_EXT}`;   // old numbered names (1.jpg...) are the fallback
   let theatreReady=false, yaw=0, pitch=0, vel=0, zoom=0, auto=true, hovering=false, dragging=false, moved=0, lbOpen=-1, my=.5;
   // DEV: initTheatre() runs once, the first time screen 11 opens. It builds the 100 tiles on a 3D ring, the drag/zoom/hover controls, the render loop and the lightbox.
   let theatreLoading=false;
   async function initTheatre(){
     if(theatreReady||theatreLoading) return; theatreLoading=true;
-    if(!(PHOTO_COUNT>0)) await loadPhotoList();   // DEV: (skipped when PHOTO_COUNT is set) finds every photo in the folder first, then builds the 100 tiles
+    await loadPhotoList();   // DEV: finds every photo in the folder first, then builds the 100 tiles
     buildTheatre();
   }
   function buildTheatre(){
