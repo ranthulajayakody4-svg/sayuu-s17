@@ -583,10 +583,42 @@
   const PHOTO_FOLDER='sayuu100', PHOTO_EXT='jpg';
   const USE_PLACEHOLDERS=false;   // DEV: set true only to preview the layout with random web images before your photos are uploaded
   const N=100, ROWS=4, COLS=25;   // DEV: total photos = ROWS x COLS (4 x 25 = 100). Change both together if you use a different count.
-  const photo=(i,big)=>USE_PLACEHOLDERS?`https://picsum.photos/seed/sayu-love-${i+1}/${big?'900/1200':'360/480'}`:`${PHOTO_FOLDER}/${i+1}.${PHOTO_EXT}`;
+  // DEV: AUTO PHOTO LIST - no renaming needed. The page reads every image inside PHOTO_FOLDER straight from your public GitHub repo
+  // and repeats them (in order, looping) until all N=100 cells are filled. Works on yourname.github.io/reponame automatically.
+  // If your site uses a custom domain, fill these two in, e.g. GH_OWNER='ranu123', GH_REPO='sayu-birthday'. Otherwise leave ''.
+  const GH_OWNER='', GH_REPO='';
+  let PHOTO_LIST=null;
+  const IMG_RE=/\.(jpe?g|png|webp|gif|avif)$/i;
+  const encPath=p=>p.split('/').map(encodeURIComponent).join('/');
+  async function loadPhotoList(){
+    if(USE_PLACEHOLDERS) return;
+    try{   // 1) optional manual list: PHOTO_FOLDER/photos.json  =  ["a.jpg","b.jpg",...]
+      const m=await fetch(encPath(PHOTO_FOLDER)+'/photos.json',{cache:'no-cache'});
+      if(m.ok){const names=(await m.json()).filter(n=>IMG_RE.test(n)); if(names.length){PHOTO_LIST=names.map(n=>encPath(PHOTO_FOLDER)+'/'+encodeURIComponent(n)); return;}}
+    }catch(e){}
+    try{   // 2) read the folder listing from GitHub
+      const h=location.hostname, seg=location.pathname.split('/').filter(Boolean)[0];
+      let owner=GH_OWNER, repo=GH_REPO;
+      if(!owner&&h.endsWith('.github.io')){owner=h.split('.')[0]; repo=(seg&&!seg.includes('.'))?seg:h;}
+      if(!owner||!repo) return;
+      const r=await fetch(`https://api.github.com/repos/${owner}/${repo}/contents/${encPath(PHOTO_FOLDER)}`);
+      if(!r.ok) return;
+      const names=(await r.json()).filter(f=>f.type==='file'&&IMG_RE.test(f.name)).map(f=>f.name)
+        .sort((a,b)=>a.localeCompare(b,undefined,{numeric:true}));
+      if(names.length) PHOTO_LIST=names.map(n=>encPath(PHOTO_FOLDER)+'/'+encodeURIComponent(n));
+    }catch(e){}
+  }
+  const photo=(i,big)=>USE_PLACEHOLDERS?`https://picsum.photos/seed/sayu-love-${i+1}/${big?'900/1200':'360/480'}`
+    :PHOTO_LIST?PHOTO_LIST[i%PHOTO_LIST.length]:`${PHOTO_FOLDER}/${i+1}.${PHOTO_EXT}`;   // old numbered names (1.jpg...) are the fallback
   let theatreReady=false, yaw=0, pitch=0, vel=0, zoom=0, auto=true, hovering=false, dragging=false, moved=0, lbOpen=-1, my=.5;
   // DEV: initTheatre() runs once, the first time screen 11 opens. It builds the 100 tiles on a 3D ring, the drag/zoom/hover controls, the render loop and the lightbox.
-  function initTheatre(){
+  let theatreLoading=false;
+  async function initTheatre(){
+    if(theatreReady||theatreLoading) return; theatreLoading=true;
+    await loadPhotoList();   // DEV: finds every photo in the folder first, then builds the 100 tiles
+    buildTheatre();
+  }
+  function buildTheatre(){
     if(theatreReady) return; theatreReady=true;
     const sec=document.getElementById('s11'), ring=document.getElementById('ring'), world=document.getElementById('world'), stage=document.getElementById('stage3d');
     const Wd=130,Hd=170,gap=14,R=Math.round(COLS*(Wd+gap)/(2*Math.PI));
